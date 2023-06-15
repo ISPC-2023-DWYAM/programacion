@@ -1,67 +1,70 @@
 import sqlite3
 import pandas as pd
 
-#Funcion para insertar las leyes que haga falta
-def insertLaw():
-    #Nro = 0
-    tipoNorma = input("Tipo de Normativa: ")
-    numNorma = input("Numero de Normativa: ")
-    fecha = input("Fecha: ")
-    desc = input("Descripcion: ")
-    cat = input("Categoria: ")
-    jur = input("Jurisdiccion: ")
-    org = input("Organo Legislativo: ")
-    keyW = input("Palabra Clave: ")
-    cursor.execute("INSERT INTO laws (TipoDeNormativa,NumeroDeNormativa,Fecha, Descripcion, Categoria, Jurisdiccion, OrganoLegislativo, PalabraClave) Values(?,?,?,?,?,?,?,?)",
-                    (tipoNorma, numNorma, fecha, desc, cat, jur, org, keyW))
-    P.commit
+class Leyes:
+    def __init__(self):
+        self.tipoNorma = None
+        self.numNorma = None
+        self.fecha = None
+        self.desc = None
+        self.cat = None
+        self.jur = None
+        self.org = None
+        self.keyW = None
 
-#Funcion para ver las leyes ya insertadas
-def verLaw():
-    cursor.execute("SELECT * FROM laws")        
-    results = cursor.fetchall()
-    results_df = pd.DataFrame(results, columns=["Nro","TipoDeNormativa", "NumeroDeNormativa", "Fecha", "Descripcion", "Categoria", "Jurisdiccion", "OrganoLegislativo", "PalabraClave"])
-    print(results_df)
+    def ingresar_datos(self):
+        self.tipoNorma = input("Tipo de Normativa: ")
+        self.numNorma = input("Numero de Normativa: ")
+        self.fecha = input("Fecha: ")
+        self.desc = input("Descripcion: ")
+        self.cat = input("Categoria: ")
+        self.jur = input("Jurisdiccion: ")
+        self.org = input("Organo Legislativo: ")
+        self.keyW = input("Palabra Clave: ")
 
-#Funcion a la que le podemos ir añadiendo las opciones    
+    def insertar_ley(self, conexion):
+        cursor = conexion.cursor()
+        cursor.execute("INSERT INTO laws (TipoDeNormativa, NumeroDeNormativa, Fecha, Descripcion, Categoria, Jurisdiccion, OrganoLegislativo, PalabraClave) VALUES (?,?,?,?,?,?,?,?)",
+                       (self.tipoNorma, self.numNorma, self.fecha, self.desc, self.cat, self.jur, self.org, self.keyW))
+        conexion.commit()
+
+    def ver_laws(self, conexion):
+        cursor = conexion.cursor()
+        cursor.execute("SELECT * FROM laws")
+        results = cursor.fetchall()
+        results_df = pd.DataFrame(results, columns=["Nro", "TipoDeNormativa", "NumeroDeNormativa", "Fecha", "Descripcion", "Categoria", "Jurisdiccion", "OrganoLegislativo", "PalabraClave"])
+        print(results_df)
+
 def menu():
-    global opcion
     print("------------------Menu------------------")
-    opcion = input("Seleccione 1 para insertar Leyes \nSeleccione 2 para ver las Leyes Existentes\n")
+    print("Seleccione 1 para insertar Leyes")
+    print("Seleccione 2 para ver las Leyes Existentes")
+    print("Seleccione 3 para salir del programa")
 
-#preguntar si sigue agregando o sale al menu
-def preguntarOtra():
-    otro = (input("Otra?:(si/no) "))
+def preguntarOtra(ob_ley):
+    otro = input("Otra? (si/no): ")
     if otro == "si":
-        insertLaw()
-    elif otro == "no":
-        print("Todas Agregados Correctamente")
-        menu()
+        ob_ley.ingresar_datos()
+        preguntarOtra(ob_ley)
 
-#conexion a la base de datos y poniendo de alias la letra P de proyecto
 with sqlite3.connect("Proyect") as P:
-    
     cursor = P.cursor()
-    cursor.execute("Create table if not exists laws (Nro INTEGER PRIMARY KEY AUTOINCREMENT, TipoDeNormativa VARCHAR(50), NumeroDeNormativa VARCHAR(50), Fecha VARCHAR(20), Descripcion VARCHAR(50), Categoria VARCHAR(50), Jurisdiccion VARCHAR(50), OrganoLegislativo VARCHAR(50), PalabraClave VARCHAR(50))")
+    cursor.execute("CREATE TABLE IF NOT EXISTS laws (Nro INTEGER PRIMARY KEY AUTOINCREMENT, TipoDeNormativa VARCHAR(50), NumeroDeNormativa VARCHAR(50), Fecha VARCHAR(20), Descripcion VARCHAR(50), Categoria VARCHAR(50), Jurisdiccion VARCHAR(50), OrganoLegislativo VARCHAR(50), PalabraClave VARCHAR(50))")
     
-    menu()
+    ob_ley = Leyes()
     
-    if opcion == "1":
-        insertLaw()
-        preguntarOtra()
-        preguntarOtra()
-        preguntarOtra()
-       
+    while True:
         menu()
+        opcion = input("Ingrese una opción: ")
         
-    elif opcion == "2":
-        verLaw()
-        menu()
-        fin = input("Salir del programa? (si/no)")
-        if fin == "no":
-            menu()
-        elif fin == "si":
-            print("Adios...")
+        if opcion == "1":
+            ob_ley.ingresar_datos()
+            ob_ley.insertar_ley(P)
+            preguntarOtra(ob_ley)
             
-    else:
-        print("Opcion Incorrecta")
+        elif opcion == "2":
+            ob_ley.ver_laws(P)
+            
+        elif opcion == "3":
+            print("Adios...")
+            break
